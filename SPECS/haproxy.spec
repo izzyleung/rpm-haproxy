@@ -216,9 +216,12 @@ if [ "$1" -ge "1" ]; then
 fi
 %endif
 
+# The file "README" is available pre 3.2 while "README.md" is available after that; if we cannot find either, don't include such
+# "doc/architecture.txt" is only available pre 3.2, do not include if the file does not exist
+%define _doc_files CHANGELOG %([ -f README ] && echo README || [ -f README.md ] && echo README.md || echo '') examples/*.cfg %([ -f doc/architecture.txt ] && echo doc/architecture.txt || echo '') doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
 %files
 %defattr(-,root,root)
-%doc CHANGELOG README examples/*.cfg doc/architecture.txt doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
+%doc %{?_doc_files}
 %if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
     %license LICENSE
 %endif
