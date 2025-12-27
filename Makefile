@@ -4,6 +4,8 @@ NO_SUDO?=0
 USE_PODMAN?=0
 LUA_VERSION?=5.4.3
 USE_LUA?=0
+AWSLC_VERSION?=1.66.1
+USE_AWSLC?=0
 USE_PROMETHEUS?=0
 CPU?=0
 VERSION=$(shell curl -s http://git.haproxy.org/git/haproxy-${MAINVERSION}.git/refs/tags/ | sed -n 's:.*>\(.*\)</a>.*:\1:p' | sed 's/^.//' | sort -rV | head -1)
@@ -12,7 +14,12 @@ ifeq ("${VERSION}","./")
 endif
 RELEASE?=1
 EXTRA_CFLAGS?=0
-PREREQ:=pcre-devel make gcc openssl-devel rpm-build systemd-devel curl sed zlib-devel
+PREREQ:=pcre-devel make gcc rpm-build systemd-devel curl sed zlib-devel
+ifeq ($(USE_AWSLC),1)
+	PREREQ += cmake wget g++
+else
+	PREREQ += openssl-devel
+endif
 ifeq ($(NO_SUDO),1)
 	SUDO=
 else
@@ -96,4 +103,6 @@ build: $(build_stages)
 	--define "_rpmdir %{_topdir}/RPMS" \
 	--define "_srcrpmdir %{_topdir}/SRPMS" \
 	--define "_use_lua ${USE_LUA}" \
-	--define "_use_prometheus ${USE_PROMETHEUS}"
+	--define "_use_prometheus ${USE_PROMETHEUS}" \
+	--define "_use_awslc ${USE_AWSLC}" \
+	--define "_awslc_version ${AWSLC_VERSION}"

@@ -35,7 +35,13 @@ BuildRequires: pcre-devel
 BuildRequires: zlib-devel
 BuildRequires: make
 BuildRequires: gcc
+%if 0%{?_use_awslc}
+BuildRequires: cmake
+BuildRequires: wget
+BuildRequires: g++
+%else
 BuildRequires: openssl-devel
+%endif
 
 Requires(pre):      shadow-utils
 Requires:           rsyslog
@@ -84,6 +90,10 @@ risking the system's stability.
 %define __perl_requires /bin/true
 
 %build
+%if 0%{?_use_awslc}
+env BUILDSSL_DESTDIR=/usr AWS_LC_VERSION=%{_awslc_version} scripts/build-ssl.sh
+%endif
+
 regparm_opts=
 %ifarch %ix86 x86_64
 regparm_opts="USE_REGPARM=1"
@@ -125,7 +135,13 @@ CPU="generic"
   CPU="%{_cpu}"
 %endif
 
-%{__make} -j$RPM_BUILD_NCPUS %{?_smp_mflags} ${USE_LUA} CPU="${CPU}" TARGET="linux-glibc" ${systemd_opts} ${pcre_opts} USE_OPENSSL=1 USE_ZLIB=1 ${regparm_opts} ADDINC="$CFLAGS" USE_LINUX_TPROXY=1 USE_THREAD=1 USE_TFO=${USE_TFO} USE_NS=${USE_NS} ${USE_PROMEX} ADDLIB="%{__global_ldflags}"
+%if 0%{?_use_awslc}
+OPENSSL_ARGS="USE_OPENSSL_AWSLC=1 SSL_LIB=/usr/lib SSL_INC=/usr/include"
+%else
+OPENSSL_ARGS="USE_OPENSSL=1"
+%endif
+
+%{__make} -j$RPM_BUILD_NCPUS %{?_smp_mflags} ${USE_LUA} CPU="${CPU}" TARGET="linux-glibc" ${systemd_opts} ${pcre_opts} ${OPENSSL_ARGS} USE_ZLIB=1 ${regparm_opts} ADDINC="$CFLAGS" USE_LINUX_TPROXY=1 USE_THREAD=1 USE_TFO=${USE_TFO} USE_NS=${USE_NS} ${USE_PROMEX} ADDLIB="%{__global_ldflags}"
 
 %{__make} admin/halog/halog OPTIMIZE="%{optflags} %{__global_ldflags}"
 
