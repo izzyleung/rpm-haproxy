@@ -216,16 +216,9 @@ if [ "$1" -ge "1" ]; then
 fi
 %endif
 
-# The file "README" is available < 3.2, while "README.md" is available >= 3.2; if we cannot find either, don't include such file
-%define _readme_file %([ -f README ] && echo README || [ -f README.md ] && echo README.md || echo '')
-
-# The file "doc/architecture.txt" is only available pre 3.2, do not include if the file does not exist
-%define _architecture_txt %([ -f doc/architecture.txt ] && echo doc/architecture.txt || echo '')
-
-%define _doc_files CHANGELOG %{_readme_file} examples/*.cfg %{_architecture_txt} doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
 %files
 %defattr(-,root,root)
-%doc %{?_doc_files}
+%doc CHANGELOG README* examples/*.cfg doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
 %if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
     %license LICENSE
 %endif
