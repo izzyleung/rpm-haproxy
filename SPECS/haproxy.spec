@@ -6,10 +6,6 @@
     %define dist %{expand:%%(/usr/lib/rpm/redhat/dist.sh --dist)}
 %endif
 
-%if 0%{?rhel} < 7
-    %{!?__global_ldflags: %global __global_ldflags -Wl,-z,relro}
-%endif
-
 %global _hardened_build 1
 
 Summary: HA-Proxy reverse proxy for high availability environments
@@ -18,14 +14,10 @@ Version: %{version}
 Release: %{release}%{?dist}
 License: GPLv2+
 Group: System Environment/Daemons
-URL: http://www.haproxy.org/
-Source0: http://www.haproxy.org/download/%{mainversion}/src/%{name}-%{version}.tar.gz
+URL: https://www.haproxy.org/
+Source0: https://www.haproxy.org/download/%{mainversion}/src/%{name}-%{version}.tar.gz
 Source1: %{name}.cfg
-%if 0%{?el6} || 0%{?amzn1}
-Source2: %{name}.init
-%else
 Source2: %{name}.service
-%endif
 Source3: %{name}.logrotate
 Source4: %{name}.syslog%{?dist}
 Source5: halog.1
@@ -40,26 +32,15 @@ BuildRequires: openssl-devel
 Requires(pre):      shadow-utils
 Requires:           rsyslog
 
-%if 0%{?el6} || 0%{?amzn1}
-Requires(post):     chkconfig, initscripts
-Requires(preun):    chkconfig, initscripts
-Requires(postun):   initscripts
-%endif
-
 %if 0%{?el7} || 0%{?amzn2} || 0%{?el8} || 0%{?el9}
 BuildRequires:      systemd-units
 BuildRequires:      systemd-devel
-Requires(post):     systemd
-Requires(preun):    systemd
-Requires(postun):   systemd
-%endif
-
-%if 0%{?amzn2023}
+%elif 0%{?amzn2023}
 BuildRequires:      systemd-devel
+%endif
 Requires(post):     systemd
 Requires(preun):    systemd
 Requires(postun):   systemd
-%endif
 
 %description
 HA-Proxy is a TCP/HTTP reverse proxy which is particularly suited for high
@@ -98,15 +79,11 @@ CFLAGS="%{optflags}"
 USE_TFO=
 USE_NS=
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
 systemd_opts="USE_SYSTEMD=1"
 pcre_opts="USE_PCRE=1 USE_PCRE_JIT=1"
-%endif
 
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?amzn1} || 0%{?el8} || 0%{?el9}
 USE_TFO=1
 USE_NS=1
-%endif
 
 %if 0%{_use_lua}
 USE_LUA="USE_LUA=1"
@@ -147,7 +124,6 @@ CPU="generic"
 
 %{__install} -p %{name} %{buildroot}%{_sbindir}/
 
-
 %{__install} -c -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/%{name}/haproxy.cfg
 %{__install} -c -m 644 examples/errorfiles/*.http %{buildroot}%{_sysconfdir}/%{name}/errors/
 %{__install} -c -m 644 doc/%{name}.1 %{buildroot}%{_mandir}/man1/
@@ -159,15 +135,8 @@ CPU="generic"
 %{__install} -p -m 0755 ./admin/iprange/ip6range %{buildroot}%{_bindir}/ip6range
 %{__install} -p -D -m 0644 %{SOURCE5} %{buildroot}%{_mandir}/man1/halog.1
 
-%if 0%{?el6} || 0%{?amzn1}
-%{__install} -d %{buildroot}%{_sysconfdir}/rc.d/init.d
-%{__install} -c -m 755 %{SOURCE2} %{buildroot}%{_sysconfdir}/rc.d/init.d/%{name}
-%endif
-
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
 %{__install} -s %{name} %{buildroot}%{_sbindir}/
 %{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_unitdir}/%{name}.service
-%endif
 
 %clean
 [ "%{buildroot}" != "/" ] && %{__rm} -rf %{buildroot}
@@ -181,47 +150,20 @@ getent passwd %{haproxy_user} >/dev/null || \
 exit 0
 
 %post
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
 %systemd_post %{name}.service
 systemctl reload-or-try-restart rsyslog.service
-%endif
-
-%if 0%{?el6} || 0%{?amzn1}
-/sbin/chkconfig --add %{name}
-/sbin/service rsyslog restart >/dev/null 2>&1 || :
-%endif
 
 %preun
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
 %systemd_preun %{name}.service
-%endif
-
-%if 0%{?el6} || 0%{?amzn1}
-if [ $1 = 0 ]; then
-  /sbin/service %{name} stop >/dev/null 2>&1 || :
-  /sbin/chkconfig --del %{name}
-fi
-%endif
 
 %postun
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
 %systemd_postun_with_restart %{name}.service
 systemctl reload-or-try-restart rsyslog.service
-%endif
-
-%if 0%{?el6} || 0%{?amzn1}
-if [ "$1" -ge "1" ]; then
-  /sbin/service %{name} condrestart >/dev/null 2>&1 || :
-  /sbin/service rsyslog restart >/dev/null 2>&1 || :
-fi
-%endif
 
 %files
 %defattr(-,root,root)
-%doc CHANGELOG README examples/*.cfg doc/architecture.txt doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
-    %license LICENSE
-%endif
+%doc CHANGELOG README* examples/*.cfg doc/configuration.txt doc/intro.txt doc/management.txt doc/proxy-protocol.txt
+%license LICENSE
 %doc %{_mandir}/man1/*
 %dir %{_sysconfdir}/%{name}
 %{_sysconfdir}/%{name}/errors
@@ -234,13 +176,7 @@ fi
 %{_bindir}/iprange
 %{_bindir}/ip6range
 
-%if 0%{?el6} || 0%{?amzn1}
-%attr(0755,root,root) %config %_sysconfdir/rc.d/init.d/%{name}
-%endif
-
-%if 0%{?el7} || 0%{?amzn2} || 0%{?amzn2023} || 0%{?el8} || 0%{?el9}
 %attr(-,root,root) %{_unitdir}/%{name}.service
-%endif
 
 %changelog
 * Tue Jul 25 2023 J. Casalino <casalino@adobe.com>
